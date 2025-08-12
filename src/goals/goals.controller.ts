@@ -6,23 +6,28 @@ import {
   Patch,
   Param,
   Delete,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
 import { GoalsService } from './goals.service';
 import { CreateGoalDto } from './dto/create-goal.dto';
 import { UpdateGoalDto } from './dto/update-goal.dto';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @Controller('goals')
 export class GoalsController {
   constructor(private readonly goalsService: GoalsService) {}
 
+  @UseGuards(JwtAuthGuard)
   @Post()
-  create(@Body() createGoalDto: CreateGoalDto) {
-    return this.goalsService.create(createGoalDto);
+  create(@Body() dto: CreateGoalDto, @Request() req) {
+    return this.goalsService.create(dto, req.user.userId);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get()
-  findAll() {
-    return this.goalsService.findAll();
+  findAll(@Request() req) {
+    return this.goalsService.findAll(req.user.userId);
   }
 
   @Get(':id')

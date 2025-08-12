@@ -11,7 +11,7 @@ import { UserEntity } from 'src/user/entities/user.entity';
 @Entity('goals')
 export class GoalEntity {
   @PrimaryGeneratedColumn()
-  id: string;
+  id: number;
 
   @Column()
   title: string;
@@ -20,7 +20,7 @@ export class GoalEntity {
   description: string;
 
   @Column({ type: 'timestamptz', nullable: true })
-  deadline: string;
+  deadline: Date;
 
   @Column({ default: false })
   isPublic: boolean;

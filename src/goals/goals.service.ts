@@ -1,15 +1,31 @@
 import { Injectable } from '@nestjs/common';
 import { CreateGoalDto } from './dto/create-goal.dto';
 import { UpdateGoalDto } from './dto/update-goal.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { GoalEntity } from './entities/goal.entity';
+import { UserEntity } from 'src/user/entities/user.entity';
 
 @Injectable()
 export class GoalsService {
-  create(createGoalDto: CreateGoalDto) {
-    return 'This action adds a new goal';
+  constructor(
+    @InjectRepository(GoalEntity)
+    private readonly goalsRepo: Repository<GoalEntity>,
+  ) {}
+
+  async create(dto: CreateGoalDto, userId: number) {
+    const goal = this.goalsRepo.create({
+      ...dto,
+      owner: { id: userId } as UserEntity,
+    });
+    return await this.goalsRepo.save(goal);
   }
 
-  findAll() {
-    return `This action returns all goals`;
+  async findAll(userId: number) {
+    return await this.goalsRepo.find({
+      where: { owner: { id: userId } },
+      relations: ['owner'],
+    });
   }
 
   findOne(id: number) {
