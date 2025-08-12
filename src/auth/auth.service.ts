@@ -23,7 +23,9 @@ export class AuthService {
 
   async register(dto: RegisterDto) {
     try {
-      const existing = await this.userRepo.findOne({ where: { email: dto.email } });
+      const existing = await this.userRepo.findOne({
+        where: { email: dto.email },
+      });
       if (existing) {
         throw new BadRequestException('Email already in use');
       }
@@ -32,7 +34,6 @@ export class AuthService {
       const user = this.userRepo.create({ ...dto, password: hashedPassword });
       await this.userRepo.save(user);
       return { message: 'User registered successfully' };
-
     } catch (error) {
       console.error('Register error:', error);
       if (error instanceof HttpException) {
@@ -47,7 +48,8 @@ export class AuthService {
     if (!user) throw new UnauthorizedException('Invalid credentials');
 
     const isPasswordValid = await bcrypt.compare(dto.password, user.password);
-    if (!isPasswordValid) throw new UnauthorizedException('Invalid credentials');
+    if (!isPasswordValid)
+      throw new UnauthorizedException('Invalid credentials');
 
     const payload = { sub: user.id, email: user.email };
     const token = this.jwtService.sign(payload);
