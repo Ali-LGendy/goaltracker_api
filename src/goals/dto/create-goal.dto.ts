@@ -20,14 +20,17 @@ export class CreateGoalDto {
   @IsDateString()
   deadline?: string;
 
+  @IsOptional()
   @IsBoolean()
-  isPublic: boolean;
+  isPublic?: boolean;
 
   @IsOptional()
-  parentId?: string | null;
-
   @IsInt()
-  order: number;
+  parentId?: any;
+
+  @IsOptional()
+  @IsInt()
+  order?: number;
 
   @IsOptional()
   @IsString()

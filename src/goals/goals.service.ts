@@ -24,7 +24,6 @@ export class GoalsService {
 
       if (!parent) throw new Error('Parent goal not found');
 
-      // Level validation
       if (parent.parent && parent.parent.parent) {
         throw new Error('Cannot add child to a grandchild goal');
       }
@@ -54,8 +53,38 @@ export class GoalsService {
     return `This action returns a #${id} goal`;
   }
 
-  update(id: number, updateGoalDto: UpdateGoalDto) {
-    return `This action updates a #${id} goal`;
+  async update(id: number, dto: UpdateGoalDto, userId: number) {
+    const goal = await this.goalsRepo.findOne({
+      where: { id, owner: { id: userId } },
+      relations: ['parent', 'parent.parent'],
+    });
+
+    if (!goal) {
+      throw new Error('Goal not found');
+    }
+
+    if (dto.parentId !== undefined) {
+      let newParent: GoalEntity | null = null;
+
+      if (dto.parentId) {
+        newParent = await this.goalsRepo.findOne({
+          where: { id: +dto.parentId, owner: { id: userId } },
+          relations: ['parent', 'parent.parent'],
+        });
+
+        if (!newParent) throw new Error('New parent goal not found');
+
+        if (newParent.parent && newParent.parent.parent) {
+          throw new Error('Cannot set a grandchild as parent');
+        }
+      }
+
+      goal.parent = newParent;
+    }
+
+    Object.assign(goal, dto);
+
+    return await this.goalsRepo.save(goal);
   }
 
   remove(id: number) {

@@ -35,9 +35,10 @@ export class GoalsController {
     return this.goalsService.findOne(+id);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateGoalDto: UpdateGoalDto) {
-    return this.goalsService.update(+id, updateGoalDto);
+  update(@Param('id') id: string, @Body() dto: UpdateGoalDto, @Request() req) {
+    return this.goalsService.update(+id, dto, req.user.userId);
   }
 
   @Delete(':id')
