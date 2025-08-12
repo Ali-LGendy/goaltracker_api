@@ -87,7 +87,17 @@ export class GoalsService {
     return await this.goalsRepo.save(goal);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} goal`;
+  async remove(id: number, userId: number) {
+    const goal = await this.goalsRepo.findOne({
+      where: { id, owner: { id: userId } },
+    });
+
+    if (!goal) {
+      throw new Error('Goal not found');
+    }
+
+    await this.goalsRepo.remove(goal);
+
+    return { message: 'Goal deleted successfully' };
   }
 }

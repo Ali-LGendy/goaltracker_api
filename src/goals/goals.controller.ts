@@ -41,8 +41,9 @@ export class GoalsController {
     return this.goalsService.update(+id, dto, req.user.userId);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.goalsService.remove(+id);
+  remove(@Param('id') id: string, @Request() req) {
+    return this.goalsService.remove(+id, req.user.userId);
   }
 }
