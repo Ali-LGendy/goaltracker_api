@@ -11,22 +11,31 @@ import { UserEntity } from 'src/user/entities/user.entity';
 @Entity('goals')
 export class GoalEntity {
   @PrimaryGeneratedColumn()
-  id: number;
+  id: string;
 
-  @Column({ length: 100 })
+  @Column()
   title: string;
 
   @Column({ type: 'text', nullable: true })
-  description?: string;
+  description: string;
 
-  @Column({ default: 'pending' })
-  status: string;
+  @Column({ type: 'timestamptz', nullable: true })
+  deadline: string;
+
+  @Column({ default: false })
+  isPublic: boolean;
+
+  @Column({ type: 'uuid', nullable: true })
+  parentId?: string | null;
 
   @Column({ type: 'int', default: 0 })
   order: number;
 
+  @Column({ nullable: true })
+  publicId?: string;
+
   @ManyToOne(() => UserEntity, (user) => user.goals, { onDelete: 'CASCADE' })
-  user: UserEntity;
+  owner: UserEntity;
 
   @CreateDateColumn()
   createdAt: Date;

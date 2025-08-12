@@ -15,6 +15,6 @@ export class UserEntity {
   @Column()
   password: string;
 
-  @OneToMany(() => GoalEntity, (goal) => goal.user)
+  @OneToMany(() => GoalEntity, (goal) => goal.owner)
   goals: GoalEntity[];
 }
