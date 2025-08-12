@@ -3,6 +3,7 @@ import {
   CreateDateColumn,
   Entity,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -33,6 +34,12 @@ export class GoalEntity {
 
   @Column({ nullable: true })
   publicId?: string;
+
+  @ManyToOne(() => GoalEntity, (goal) => goal.children, { onDelete: 'CASCADE', nullable: true })
+  parent?: GoalEntity | null;
+
+  @OneToMany(() => GoalEntity, (goal) => goal.parent)
+  children: GoalEntity[];
 
   @ManyToOne(() => UserEntity, (user) => user.goals, { onDelete: 'CASCADE' })
   owner: UserEntity;
