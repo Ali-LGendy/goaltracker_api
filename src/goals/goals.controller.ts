@@ -13,6 +13,7 @@ import { GoalsService } from './goals.service';
 import { CreateGoalDto } from './dto/create-goal.dto';
 import { UpdateGoalDto } from './dto/update-goal.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { GoalOrderDto } from './dto/reorder-goals.dto';
 
 @Controller('goals')
 export class GoalsController {
@@ -62,5 +63,11 @@ export class GoalsController {
   @Post('fix-public-goals')
   fixPublicGoals() {
     return this.goalsService.fixExistingPublicGoals();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('reorder')
+  reorderGoals(@Body() dto: any, @Request() req) {
+    return this.goalsService.reorderGoals(dto, req.user.userId);
   }
 }

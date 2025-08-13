@@ -6,6 +6,7 @@ import { Repository, IsNull } from 'typeorm';
 import { GoalEntity } from './entities/goal.entity';
 import { UserEntity } from 'src/user/entities/user.entity';
 import { v4 as uuidv4 } from 'uuid';
+import { GoalOrderDto } from './dto/reorder-goals.dto';
 
 @Injectable()
 export class GoalsService {
@@ -186,5 +187,58 @@ export class GoalsService {
       message: `Fixed ${publicGoalsWithoutPublicId.length} public goals`,
       fixedGoals: publicGoalsWithoutPublicId.map(g => ({ id: g.id, title: g.title, publicId: g.publicId }))
     };
+  }
+
+  async reorderGoals(dto: any, userId: number) {
+    const { goals, parentId } = dto;
+
+    const goalIds = goals.map(g => g.id);
+
+    const whereConditions = goalIds.map(id => ({
+      id,
+      owner: { id: userId },
+      parent: parentId ? { id: parentId } : IsNull()
+    }));
+
+    const userGoals = await this.goalsRepo.find({
+      where: whereConditions,
+      relations: ['parent'],
+    });
+
+    if (userGoals.length !== goalIds.length) {
+      throw new Error('Some goals not found, unauthorized, or not at the specified level');
+    }
+
+    const expectedParentId = parentId || null;
+    for (const goal of userGoals) {
+      const goalParentId = goal.parent?.id || null;
+      if (goalParentId !== expectedParentId) {
+        throw new Error(`Goal ${goal.id} is not at the specified level`);
+      }
+    }
+
+    const queryRunner = this.goalsRepo.manager.connection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      for (const goalUpdate of goals) {
+        await queryRunner.manager.update(GoalEntity, goalUpdate.id, {
+          order: goalUpdate.order
+        });
+      }
+
+      await queryRunner.commitTransaction();
+      return { 
+        message: 'Goals reordered successfully',
+        level: parentId ? `children of goal ${parentId}` : 'root level',
+        reorderedCount: goals.length
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw new Error('Failed to reorder goals: ');
+    } finally {
+      await queryRunner.release();
+    }
   }
 }
