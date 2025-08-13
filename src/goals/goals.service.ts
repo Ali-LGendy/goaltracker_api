@@ -5,6 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
 import { GoalEntity } from './entities/goal.entity';
 import { UserEntity } from 'src/user/entities/user.entity';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class GoalsService {
@@ -29,8 +30,14 @@ export class GoalsService {
       }
     }
 
+    let publicId = dto.publicId;
+    if (dto.isPublic && !publicId) {
+      publicId = uuidv4();
+    }
+
     const goal = this.goalsRepo.create({
       ...dto,
+      publicId,
       owner: { id: userId } as UserEntity,
       parent: parent || null,
     });
@@ -49,8 +56,61 @@ export class GoalsService {
     });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} goal`;
+  async findOne(id: number, userId: number) {
+    if (isNaN(id) || !Number.isInteger(id) || id <= 0) {
+      throw new Error('Invalid goal ID');
+    }
+
+    const goal = await this.goalsRepo.findOne({
+      where: { id, owner: { id: userId } },
+      relations: ['children', 'children.children', 'parent', 'owner'],
+    });
+
+    if (!goal) {
+      throw new Error('Goal not found');
+    }
+
+    return goal;
+  }
+
+  async findAllPublic() {
+    return await this.goalsRepo.find({
+      where: {
+        isPublic: true,
+        parent: IsNull(),
+      },
+      relations: ['children', 'children.children', 'owner'],
+      order: {
+        createdAt: 'DESC',
+        children: { order: 'ASC' },
+      },
+      select: {
+        owner: {
+          id: true,
+        },
+      },
+    });
+  }
+
+  async findPublicGoal(publicId: string) {
+    const goal = await this.goalsRepo.findOne({
+      where: {
+        publicId,
+        isPublic: true,
+      },
+      relations: ['children', 'children.children', 'parent', 'owner'],
+      select: {
+        owner: {
+          id: true,
+        },
+      },
+    });
+
+    if (!goal) {
+      throw new Error('Public goal not found');
+    }
+
+    return goal;
   }
 
   async update(id: number, dto: UpdateGoalDto, userId: number) {
@@ -82,6 +142,14 @@ export class GoalsService {
       goal.parent = newParent;
     }
 
+    if (dto.isPublic === true && !goal.publicId && !dto.publicId) {
+      dto.publicId = uuidv4();
+    }
+
+    if (dto.isPublic === false) {
+      dto.publicId = undefined;
+    }
+
     Object.assign(goal, dto);
 
     return await this.goalsRepo.save(goal);
@@ -99,5 +167,24 @@ export class GoalsService {
     await this.goalsRepo.remove(goal);
 
     return { message: 'Goal deleted successfully' };
+  }
+
+  async fixExistingPublicGoals() {
+    const publicGoalsWithoutPublicId = await this.goalsRepo.find({
+      where: {
+        isPublic: true,
+        publicId: IsNull(),
+      },
+    });
+
+    for (const goal of publicGoalsWithoutPublicId) {
+      goal.publicId = uuidv4();
+      await this.goalsRepo.save(goal);
+    }
+
+    return {
+      message: `Fixed ${publicGoalsWithoutPublicId.length} public goals`,
+      fixedGoals: publicGoalsWithoutPublicId.map(g => ({ id: g.id, title: g.title, publicId: g.publicId }))
+    };
   }
 }

@@ -30,9 +30,20 @@ export class GoalsController {
     return this.goalsService.findAll(req.user.userId);
   }
 
+  @Get('public-goals')
+  findAllPublic() {
+    return this.goalsService.findAllPublic();
+  }
+
+  @Get('public-goals/:publicId')
+  findPublicGoal(@Param('publicId') publicId: string) {
+    return this.goalsService.findPublicGoal(publicId);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.goalsService.findOne(+id);
+  findOne(@Param('id') id: string, @Request() req) {
+    return this.goalsService.findOne(+id, req.user.userId);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -45,5 +56,11 @@ export class GoalsController {
   @Delete(':id')
   remove(@Param('id') id: string, @Request() req) {
     return this.goalsService.remove(+id, req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('fix-public-goals')
+  fixPublicGoals() {
+    return this.goalsService.fixExistingPublicGoals();
   }
 }
